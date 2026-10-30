@@ -6,7 +6,7 @@ The repository includes a Render Blueprint in [render.yaml](../render.yaml) for 
 
 Use [render.test.yaml](../render.test.yaml) when creating a test deployment. In Render's Blueprint setup, select this file as the Blueprint path instead of `render.yaml`; this avoids creating the paid production service at the same time.
 
-The test Blueprint uses Render's free web-service plan, a generated management API key, and `/tmp/shortener-test.db`. It intentionally has no persistent disk: data can disappear on restart or redeploy, and the free service may spin down when idle. Use test data only. Verify `/healthz`, `/docs`, link creation with `X-API-Key`, and a redirect before considering production.
+The test Blueprint uses Render's free web-service plan, a generated management API key, and `/tmp/shortener-test.db`. It intentionally has no persistent disk: data can disappear on restart or redeploy, and the free service may spin down when idle. The root page has a public demo form; link creation is rate-limited and requires no key. The API key remains required for metadata, analytics, and deletion endpoints. Use test data only. Verify `/`, `/healthz`, `/docs`, public link creation, and a redirect before considering production.
 
 ## Before provisioning
 

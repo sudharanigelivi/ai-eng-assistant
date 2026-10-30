@@ -30,7 +30,7 @@ The planner itself does not call an AI model and the repository does not contain
 ## Validation performed
 
 - Full test command: `python -m pytest --cov --cov-report=term-missing`
-- Result on Python 3.12.10: **109 passed**, **96% total line coverage**.
+- Result on Python 3.12.10: **111 passed**, **96% total line coverage**.
 - Regression validation: the new cache/delete race test failed against the pre-fix implementation and passed after the fix.
 - Mandatory planner scenario was run through the CLI and classified as `greenfield`, domain `url_shortener`, with medium ambiguity and explicit scale/analytics/API/persistence assumptions.
 

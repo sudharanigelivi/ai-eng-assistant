@@ -132,6 +132,20 @@ def test_api_key_protects_management_not_redirect(make_client):
     assert c.get(f"/api/v1/links/{code}/analytics").status_code == 401
 
 
+def test_demo_mode_allows_public_creation_but_protects_management(make_client):
+    c = make_client(api_key="demo-secret", demo_mode=True)
+    home = c.get("/")
+    assert home.status_code == 200 and "Create Short Link" in home.text
+
+    created = c.post("/api/v1/links", json={"url": "https://example.com/demo"})
+    assert created.status_code == 201
+    code = created.json()["code"]
+    assert c.get(f"/{code}").status_code == 302
+    assert c.get(f"/api/v1/links/{code}").status_code == 401
+    assert c.get(f"/api/v1/links/{code}/analytics").status_code == 401
+    assert c.delete(f"/api/v1/links/{code}").status_code == 401
+
+
 def test_healthz_and_openapi(client):
     assert client.get("/healthz").json() == {"status": "ok"}
     paths = client.get("/openapi.json").json()["paths"]

@@ -63,12 +63,12 @@ Configuration (env vars): `SHORTENER_DB_PATH`, `SHORTENER_BASE_URL`, `SHORTENER_
 
 ## Deploy to Render
 
-The [`render.yaml`](render.yaml) Blueprint configures the paid persistent deployment; [`render.test.yaml`](render.test.yaml) configures a free, ephemeral test deployment. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) before applying either Blueprint.
+The [`render.yaml`](render.yaml) Blueprint configures the paid persistent deployment; [`render.test.yaml`](render.test.yaml) configures a free, ephemeral demo deployment with keyless, rate-limited link creation and a browser form at `/`. Management endpoints remain API-key protected. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) before applying either Blueprint.
 
 ## Testing
 
 ```bash
-pytest --cov --cov-report=term-missing   # 109 tests, 96% line coverage
+pytest --cov --cov-report=term-missing   # 111 tests, 96% line coverage
 ```
 
 Approach: unit tests (validation, cache, rate limiter, repository, click classification), service and API tests through FastAPI's `TestClient` with an injected fake clock (expiry and analytics are deterministic), and planner tests (classification, dependency/cycle checks, CLI, API). A concurrency regression test verifies deletion cannot be followed by a stale cache fill. An end-to-end manual check with uvicorn and curl was also run (create, redirect, analytics).

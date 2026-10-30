@@ -28,7 +28,8 @@ def make_client(tmp_path, clock):
     def _make(**overrides):
         settings = Settings(
             db_path=str(tmp_path / "t.db"), base_url="http://sho.rt",
-            rate_limit_per_minute=overrides.pop("rate_limit_per_minute", 0), **overrides
+            rate_limit_per_minute=overrides.pop("rate_limit_per_minute", 0),
+            demo_mode=overrides.pop("demo_mode", False), **overrides
         )
         client = TestClient(create_app(settings, clock=clock), follow_redirects=False)
         clients.append(client)

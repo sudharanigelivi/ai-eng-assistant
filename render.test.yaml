@@ -10,4 +10,6 @@ services:
       - key: SHORTENER_API_KEY
         generateValue: true
       - key: SHORTENER_RATE_LIMIT
-        value: "60"
+        value: "10"
+      - key: SHORTENER_DEMO_MODE
+        value: "true"

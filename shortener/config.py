@@ -11,6 +11,7 @@ class Settings:
     cache_size: int = 10_000
     cache_ttl_seconds: int = 60
     rate_limit_per_minute: int = 60  # create-link calls per client; 0 disables
+    demo_mode: bool = False
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -32,4 +33,5 @@ class Settings:
             rate_limit_per_minute=int(
                 env.get("SHORTENER_RATE_LIMIT", cls.rate_limit_per_minute)
             ),
+            demo_mode=env.get("SHORTENER_DEMO_MODE", "").lower() in {"1", "true", "yes"},
         )

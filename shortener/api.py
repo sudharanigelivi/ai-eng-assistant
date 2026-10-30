@@ -3,9 +3,10 @@ import time
 from datetime import datetime, timezone
 
 from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Query, Request
-from fastapi.responses import RedirectResponse, Response
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from .config import Settings
+from .demo import DEMO_PAGE, PROTECTED_HOME_PAGE
 from .ratelimit import RateLimiter
 from .repository import Link, SqliteRepository
 from .schemas import AnalyticsResponse, CreateLinkRequest, ErrorResponse, LinkResponse
@@ -34,11 +35,21 @@ def create_app(settings: Settings | None = None, clock=None) -> FastAPI:
     app.state.service = service
     app.state.repo = repo
 
+    @app.get("/", response_class=HTMLResponse, include_in_schema=False)
+    def homepage():
+        page = DEMO_PAGE if settings.demo_mode else PROTECTED_HOME_PAGE
+        return HTMLResponse(page)
+
     def require_api_key(x_api_key: str | None = Header(None)) -> None:
         if settings.api_key and not (
             x_api_key and secrets.compare_digest(x_api_key, settings.api_key)
         ):
             raise HTTPException(401, "Invalid or missing API key")
+
+    def require_create_access(x_api_key: str | None = Header(None)) -> None:
+        if settings.demo_mode:
+            return
+        require_api_key(x_api_key)
 
     def link_out(link: Link) -> LinkResponse:
         return LinkResponse(
@@ -62,7 +73,7 @@ def create_app(settings: Settings | None = None, clock=None) -> FastAPI:
         responses={409: {"model": ErrorResponse}, 422: {"model": ErrorResponse},
                    429: {"model": ErrorResponse}},
         tags=["links"],
-        dependencies=[Depends(require_api_key)],
+        dependencies=[Depends(require_create_access)],
     )
     def create_link(body: CreateLinkRequest, request: Request):
         client = request.client.host if request.client else "unknown"

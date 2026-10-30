@@ -21,3 +21,9 @@ def test_explicit_base_url_overrides_render_hostname(monkeypatch):
     monkeypatch.setenv("RENDER_EXTERNAL_HOSTNAME", "short.example.onrender.com")
 
     assert Settings.from_env().base_url == "https://links.example.com"
+
+
+def test_demo_mode_is_explicitly_enabled_by_environment(monkeypatch):
+    monkeypatch.setenv("SHORTENER_DEMO_MODE", "true")
+
+    assert Settings.from_env().demo_mode is True
