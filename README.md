@@ -61,18 +61,24 @@ Full contract: [`docs/openapi.json`](docs/openapi.json), or `/docs` when running
 
 Configuration (env vars): `SHORTENER_DB_PATH`, `SHORTENER_BASE_URL`, `SHORTENER_API_KEY` (if set, `/api/v1/*` requires an `X-API-Key` header), `SHORTENER_CODE_LENGTH`, `SHORTENER_CACHE_SIZE`, `SHORTENER_CACHE_TTL`, `SHORTENER_RATE_LIMIT` (creates per minute per IP, 0 disables).
 
+## Deploy to Render
+
+The [`render.yaml`](render.yaml) Blueprint configures the paid persistent deployment; [`render.test.yaml`](render.test.yaml) configures a free, ephemeral test deployment. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) before applying either Blueprint.
+
 ## Testing
 
 ```bash
-pytest --cov --cov-report=term-missing   # 105 tests, ~98% line coverage
+pytest --cov --cov-report=term-missing   # 109 tests, 96% line coverage
 ```
 
-Approach: unit tests (validation, cache, rate limiter, repository, click classification), service and API tests through FastAPI's `TestClient` with an injected fake clock (expiry and analytics are deterministic), and planner tests (classification, dependency/cycle checks, CLI, API). An end-to-end manual check with uvicorn and curl was also run (create, redirect, analytics).
+Approach: unit tests (validation, cache, rate limiter, repository, click classification), service and API tests through FastAPI's `TestClient` with an injected fake clock (expiry and analytics are deterministic), and planner tests (classification, dependency/cycle checks, CLI, API). A concurrency regression test verifies deletion cannot be followed by a stale cache fill. An end-to-end manual check with uvicorn and curl was also run (create, redirect, analytics).
 
 Not covered: load or concurrency testing at scale, multi-process behaviour, and real-browser or real-network redirect behaviour. No performance numbers are claimed.
 
 ## Docs
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): design, AI integration, trade-offs, scaling path
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md): Render Blueprint deployment and operational notes
 - [`docs/VALIDATION_AND_RISKS.md`](docs/VALIDATION_AND_RISKS.md): AI validation checklist, risks, known limitations
 - [`docs/SCENARIOS.md`](docs/SCENARIOS.md): greenfield, brownfield and ambiguous walkthroughs
+- [`ENGINEERING_SUMMARY.md`](ENGINEERING_SUMMARY.md): assignment outcome, implementation rationale, validation results, risks and assumptions

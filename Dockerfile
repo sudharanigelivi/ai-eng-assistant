@@ -8,4 +8,4 @@ RUN useradd -m app && mkdir /data && chown app /data
 USER app
 ENV SHORTENER_DB_PATH=/data/shortener.db
 EXPOSE 8000
-CMD ["uvicorn", "shortener.api:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn shortener.api:create_app --factory --host 0.0.0.0 --port ${PORT:-8000}"]

@@ -1,8 +1,10 @@
+import threading
+
 import pytest
 
 from shortener.config import Settings
 from shortener.repository import DuplicateCodeError, SqliteRepository
-from shortener.service import AliasTakenError, ShortenerService
+from shortener.service import AliasTakenError, NotFoundError, ShortenerService
 from shortener.validation import ValidationError
 
 
@@ -46,6 +48,45 @@ def test_resolve_uses_cache(monkeypatch):
     svc.resolve(code)
     monkeypatch.setattr(repo, "get_link", lambda c: pytest.fail("cache miss"))
     assert svc.resolve(code) == "https://e.com"
+
+
+def test_delete_cannot_be_followed_by_stale_cache_fill(monkeypatch):
+    svc, repo = make_service()
+    code = svc.create("https://e.com").code
+    original_get = repo.get_link
+    original_invalidate = svc._cache.invalidate
+    lookup_started = threading.Event()
+    continue_lookup = threading.Event()
+    invalidated = threading.Event()
+
+    def blocked_get(link_code):
+        link = original_get(link_code)
+        lookup_started.set()
+        assert continue_lookup.wait(timeout=2)
+        return link
+
+    def observed_invalidate(link_code):
+        original_invalidate(link_code)
+        invalidated.set()
+
+    monkeypatch.setattr(repo, "get_link", blocked_get)
+    monkeypatch.setattr(svc._cache, "invalidate", observed_invalidate)
+    resolved = []
+    resolver = threading.Thread(target=lambda: resolved.append(svc.resolve(code)))
+    deleter = threading.Thread(target=lambda: svc.delete(code))
+
+    resolver.start()
+    assert lookup_started.wait(timeout=1)
+    deleter.start()
+    invalidated.wait(timeout=0.1)
+    continue_lookup.set()
+    resolver.join(timeout=2)
+    deleter.join(timeout=2)
+
+    assert not resolver.is_alive() and not deleter.is_alive()
+    assert resolved == ["https://e.com"]
+    with pytest.raises(NotFoundError):
+        svc.resolve(code)
 
 
 def test_code_length_setting():

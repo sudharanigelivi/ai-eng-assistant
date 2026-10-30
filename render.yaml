@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: ai-eng-assistant-shortener
+    runtime: docker
+    plan: 0.5c-512mb
+    healthCheckPath: /healthz
+    disk:
+      name: shortener-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: SHORTENER_DB_PATH
+        value: /data/shortener.db
+      - key: SHORTENER_API_KEY
+        generateValue: true
+      - key: SHORTENER_RATE_LIMIT
+        value: "60"

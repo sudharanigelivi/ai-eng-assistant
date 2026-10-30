@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: ai-eng-assistant-shortener-test
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: SHORTENER_DB_PATH
+        value: /tmp/shortener-test.db
+      - key: SHORTENER_API_KEY
+        generateValue: true
+      - key: SHORTENER_RATE_LIMIT
+        value: "60"

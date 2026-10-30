@@ -1,5 +1,6 @@
 import secrets
 import string
+import threading
 import time
 from dataclasses import dataclass
 from typing import Callable
@@ -42,6 +43,7 @@ class ShortenerService:
         self._repo = repo
         self._settings = settings
         self._clock = clock
+        self._cache_fill_lock = threading.Lock()
         self._cache: TTLCache[_CachedTarget] = TTLCache(
             settings.cache_size, settings.cache_ttl_seconds
         )
@@ -80,19 +82,25 @@ class ShortenerService:
         """Return the target URL for a redirect (cache first, then the database)."""
         target = self._cache.get(code)
         if target is None:
-            link = self._repo.get_link(code)
-            if link is None:
-                raise NotFoundError(code)
-            target = _CachedTarget(link.url, link.expires_at)
-            self._cache.set(code, target)
+            # Serialize cache misses with deletion so an older database read
+            # cannot refill the cache after delete() invalidates the code.
+            with self._cache_fill_lock:
+                target = self._cache.get(code)
+                if target is None:
+                    link = self._repo.get_link(code)
+                    if link is None:
+                        raise NotFoundError(code)
+                    target = _CachedTarget(link.url, link.expires_at)
+                    self._cache.set(code, target)
         if target.expires_at is not None and target.expires_at <= self._now():
             raise ExpiredError(code)
         return target.url
 
     def delete(self, code: str) -> None:
-        if not self._repo.delete_link(code):
-            raise NotFoundError(code)
-        self._cache.invalidate(code)
+        with self._cache_fill_lock:
+            if not self._repo.delete_link(code):
+                raise NotFoundError(code)
+            self._cache.invalidate(code)
 
     def record_click(self, code: str, referrer: str | None, user_agent: str | None) -> None:
         self._repo.record_click(
