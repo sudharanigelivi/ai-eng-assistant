@@ -9,6 +9,14 @@ Two deliverables in one repo, built around the principle **AI assists the engine
 
 > **Honesty note:** the planner is deterministic (keyword rules plus curated templates). It makes **no LLM call**. It generates prompts you paste into Copilot or ChatGPT, and it never claims AI output is correct. Classification is a heuristic and may be wrong, so the engineer reviews it.
 
+## Quick start
+
+```bash
+git clone -b initial-import https://github.com/sudharanigelivi/ai-eng-assistant.git
+cd ai-eng-assistant
+docker compose up --build        # then open http://localhost:8000/docs
+```
+
 ## Setup
 
 ```bash

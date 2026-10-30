@@ -1,0 +1,11 @@
+services:
+  shortener:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      SHORTENER_BASE_URL: http://localhost:8000
+    volumes:
+      - shortener-data:/data
+volumes:
+  shortener-data:
