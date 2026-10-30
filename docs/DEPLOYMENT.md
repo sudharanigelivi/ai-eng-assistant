@@ -8,6 +8,8 @@ Use [render.test.yaml](../render.test.yaml) when creating a test deployment. In 
 
 The test Blueprint uses Render's free web-service plan, a generated management API key, and `/tmp/shortener-test.db`. It intentionally has no persistent disk: data can disappear on restart or redeploy, and the free service may spin down when idle. The root page has a public demo form; link creation is rate-limited and requires no key. The API key remains required for metadata, analytics, and deletion endpoints. Use test data only. Verify `/`, `/healthz`, `/docs`, public link creation, and a redirect before considering production.
 
+The test service is currently deployed at [https://ai-eng-assistant-shortener-test.onrender.com/](https://ai-eng-assistant-shortener-test.onrender.com/). Its generated management key is available in the service's **Environment** settings as `SHORTENER_API_KEY`; do not share that value.
+
 ## Before provisioning
 
 - Push this repository to a Git provider that Render can access.
@@ -21,7 +23,7 @@ The test Blueprint uses Render's free web-service plan, a generated management A
 3. Wait for the first deployment to complete. Render's `PORT` environment variable is honored by the Docker command, and `/healthz` is used as the health check.
 4. Open the service's `https://…onrender.com` address. The app derives its public short-link base URL from Render's `RENDER_EXTERNAL_HOSTNAME`; an explicit `SHORTENER_BASE_URL` overrides it.
 5. Retrieve the generated `SHORTENER_API_KEY` from the service's environment settings and store it securely. Use it as `X-API-Key` for management endpoints (`/api/v1/*`). Do not commit the key or put it in client-side code. Redirects and `/healthz` remain public.
-6. Verify `/healthz` returns `{"status":"ok"}` and `/docs` loads. Create a test link using the API key, confirm its returned `short_url` uses the public host, and test the redirect. Delete the test link afterward.
+6. Verify `/healthz` returns `{"status":"ok"}` and `/docs` loads. Create a link using the authenticated API, confirm its returned `short_url` uses the public host, and test the redirect. Delete the test link afterward.
 
 ## Operational notes
 
@@ -31,4 +33,4 @@ The test Blueprint uses Render's free web-service plan, a generated management A
 - The app uses a process-local rate limiter and cache. Keep one instance unless persistence and shared coordination are upgraded.
 - No production load test or availability guarantee has been performed. Treat the deployment as a hosted prototype, not a production SLO commitment.
 
-This repository change creates deployment configuration only. A live Render service and public URL are created only after the Blueprint is applied in an authenticated Render account.
+The test Blueprint has been applied and its service is live. The production Blueprint remains configuration only until it is applied in an authenticated Render account with the required billing information. A public production URL is assigned by Render after that deployment succeeds.

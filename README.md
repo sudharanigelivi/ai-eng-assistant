@@ -59,11 +59,19 @@ curl -X DELETE localhost:8000/api/v1/links/demo-1   # 204
 
 Full contract: [`docs/openapi.json`](docs/openapi.json), or `/docs` when running.
 
-Configuration (env vars): `SHORTENER_DB_PATH`, `SHORTENER_BASE_URL`, `SHORTENER_API_KEY` (if set, `/api/v1/*` requires an `X-API-Key` header), `SHORTENER_CODE_LENGTH`, `SHORTENER_CACHE_SIZE`, `SHORTENER_CACHE_TTL`, `SHORTENER_RATE_LIMIT` (creates per minute per IP, 0 disables).
+## Try the hosted demo
+
+- **Demo form:** https://ai-eng-assistant-shortener-test.onrender.com/
+- **Interactive API docs:** https://ai-eng-assistant-shortener-test.onrender.com/docs
+- **Health:** https://ai-eng-assistant-shortener-test.onrender.com/healthz
+
+Paste a URL into **Drop Link**, optionally enter a 4–32 character **Short Name**, and click **Create Short Link**. The public test demo does not require an API key to create links. Its free service uses temporary storage; links may disappear after a restart or redeploy. Do not use it for sensitive or permanent links.
+
+Configuration (environment variables): `SHORTENER_DB_PATH`, `SHORTENER_BASE_URL`, `SHORTENER_API_KEY`, `SHORTENER_CODE_LENGTH`, `SHORTENER_CACHE_SIZE`, `SHORTENER_CACHE_TTL`, `SHORTENER_RATE_LIMIT`, and `SHORTENER_DEMO_MODE`. When a key is configured, metadata, analytics, and deletion require `X-API-Key`; link creation also requires it unless `SHORTENER_DEMO_MODE=true`. Demo mode is intended only for the rate-limited test service and should remain disabled for production.
 
 ## Deploy to Render
 
-The [`render.yaml`](render.yaml) Blueprint configures the paid persistent deployment; [`render.test.yaml`](render.test.yaml) configures a free, ephemeral demo deployment with keyless, rate-limited link creation and a browser form at `/`. Management endpoints remain API-key protected. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) before applying either Blueprint.
+The [`render.yaml`](render.yaml) Blueprint configures a paid persistent deployment; [`render.test.yaml`](render.test.yaml) configures the free, ephemeral demo deployment. The test service is live at the URLs above. The production Blueprint has not been provisioned and may incur charges. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) before deploying.
 
 ## Testing
 
@@ -78,6 +86,7 @@ Not covered: load or concurrency testing at scale, multi-process behaviour, and 
 ## Docs
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): design, AI integration, trade-offs, scaling path
+- [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md): hosted demo, key/access rules, API examples, local setup, and testing
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md): Render Blueprint deployment and operational notes
 - [`docs/VALIDATION_AND_RISKS.md`](docs/VALIDATION_AND_RISKS.md): AI validation checklist, risks, known limitations
 - [`docs/SCENARIOS.md`](docs/SCENARIOS.md): greenfield, brownfield and ambiguous walkthroughs

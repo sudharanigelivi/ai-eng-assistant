@@ -17,6 +17,7 @@ This repository provides a runnable, engineer-led prototype for turning a softwa
 - Planner CLI and HTTP endpoint producing structured task plans.
 - OpenAPI contract at [docs/openapi.json](docs/openapi.json) and API schemas in the implementation.
 - Render deployment Blueprints at [render.yaml](render.yaml) (persistent production) and [render.test.yaml](render.test.yaml) (ephemeral test), each with a generated management key.
+- Public demo form in the test deployment: create rate-limited links without a visitor API key; management endpoints remain protected.
 - Unit and integration tests, including expiry, validation, rate limiting, persistence, analytics and concurrency cases.
 - Scenario inputs and generated Markdown/JSON plans in [examples/](examples).
 - Architecture, scenario, validation/risk and setup documentation.
