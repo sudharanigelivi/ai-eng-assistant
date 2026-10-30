@@ -55,7 +55,7 @@ DEMO_PAGE = """<!doctype html>
         <label for="url">Drop Link</label>
         <input id="url" name="url" type="url" placeholder="Paste your long URL here" required maxlength="2048">
         <label for="alias">Short Name <span style="color:#9295a7;font-weight:500">(optional)</span></label>
-        <input id="alias" name="alias" type="text" placeholder="e.g. demo-link" minlength="4" maxlength="32" pattern="[A-Za-z0-9_-]{4,32}" title="Use 4–32 letters, numbers, hyphens, or underscores">
+        <input id="alias" name="alias" type="text" placeholder="e.g. demo-link" minlength="4" maxlength="32" pattern="[A-Za-z0-9_\\-]{4,32}" title="Use 4–32 letters, numbers, hyphens, or underscores">
         <label for="short-url">Shortened URL</label>
         <div class="result-row">
           <input id="short-url" type="url" placeholder="Your short URL will appear here" readonly aria-live="polite">
