@@ -1,0 +1,447 @@
+{
+  "requirement": "Build a scalable URL shortener service with APIs, persistence, and analytics.",
+  "requirement_type": "greenfield",
+  "domain": "url_shortener",
+  "ambiguity_level": "medium",
+  "problem_statement": "Deliver a stateless HTTP service that maps long URLs to short codes, redirects with low latency, persists links durably, and reports per-link click analytics, with explicit numeric scale targets and abuse protection.",
+  "ambiguities": [
+    {
+      "term": "scalable",
+      "question": "What load must it sustain (requests/sec, links, data size) and what latency target applies?",
+      "assumption": "Target ~1,000 redirects/s and 50 creates/s per node, p95 redirect < 50 ms; scale out by adding stateless nodes.",
+      "impact": "high"
+    },
+    {
+      "term": "analytics",
+      "question": "Which metrics (totals, time series, referrers, geo, unique visitors) and what retention?",
+      "assumption": "Total clicks, clicks per day, top referrer hosts and device class; raw events kept, no IP/geo stored.",
+      "impact": "medium"
+    },
+    {
+      "term": "apis",
+      "question": "REST, GraphQL or gRPC? Who authenticates and how are errors reported?",
+      "assumption": "JSON REST over HTTP, OpenAPI documented, optional API key on management endpoints.",
+      "impact": "medium"
+    },
+    {
+      "term": "persistence",
+      "question": "Which datastore, durability and retention requirements apply?",
+      "assumption": "SQLite behind a repository interface for the prototype; the schema ports to PostgreSQL.",
+      "impact": "medium"
+    }
+  ],
+  "assumptions": [
+    "scalable: Target ~1,000 redirects/s and 50 creates/s per node, p95 redirect < 50 ms; scale out by adding stateless nodes.",
+    "analytics: Total clicks, clicks per day, top referrer hosts and device class; raw events kept, no IP/geo stored.",
+    "apis: JSON REST over HTTP, OpenAPI documented, optional API key on management endpoints.",
+    "persistence: SQLite behind a repository interface for the prototype; the schema ports to PostgreSQL."
+  ],
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Clarify requirement, scale targets and analytics scope",
+      "category": "clarify",
+      "depends_on": [],
+      "deliverables": [
+        "Problem statement",
+        "NFR targets (throughput, latency)",
+        "Analytics definition"
+      ],
+      "ai_assist": {
+        "prompt": "Requirement: \"Build a scalable URL shortener service with APIs, persistence, and analytics.\". Identify ambiguities in 'scalable', 'persistence' and 'analytics'. Propose measurable targets and a minimal analytics set.",
+        "ai_role": "Lists ambiguities and proposes targets.",
+        "engineer_owns": "Chooses targets and records them as assumptions."
+      },
+      "validation": [
+        "Targets are numeric",
+        "Analytics fields are enumerated"
+      ],
+      "wave": 1
+    },
+    {
+      "id": "T2",
+      "title": "Design REST API contract (OpenAPI)",
+      "category": "design",
+      "depends_on": [
+        "T1"
+      ],
+      "deliverables": [
+        "POST/GET/DELETE /api/v1/links",
+        "GET /api/v1/links/{code}/analytics",
+        "GET /{code} redirect",
+        "Error model"
+      ],
+      "ai_assist": {
+        "prompt": "Draft an OpenAPI 3 contract for a URL shortener: create (custom alias, expiry), fetch, delete, analytics, redirect (302). Define 404/409/410/422/429 semantics.",
+        "ai_role": "Drafts endpoints and schemas.",
+        "engineer_owns": "Chooses 302 over 301 (analytics must see every click) and the status code for each failure."
+      },
+      "validation": [
+        "Every endpoint documents error cases",
+        "Redirect status chosen with rationale"
+      ],
+      "wave": 2
+    },
+    {
+      "id": "T3",
+      "title": "Design persistence schema",
+      "category": "design",
+      "depends_on": [
+        "T1"
+      ],
+      "deliverables": [
+        "links table",
+        "clicks table + (code, ts) index"
+      ],
+      "ai_assist": {
+        "prompt": "Design a relational schema for short links and click events supporting redirect lookup by code and per-day aggregation. Explain indexes.",
+        "ai_role": "Proposes DDL and indexes.",
+        "engineer_owns": "Validates keys, cascade rules and that the hot path is one indexed lookup."
+      },
+      "validation": [
+        "Redirect lookup is a primary-key read",
+        "Deleting a link removes its clicks"
+      ],
+      "wave": 2
+    },
+    {
+      "id": "T4",
+      "title": "Short-code generation and URL validation",
+      "category": "code",
+      "depends_on": [
+        "T2"
+      ],
+      "deliverables": [
+        "Code generator",
+        "URL/alias validator"
+      ],
+      "ai_assist": {
+        "prompt": "Implement collision-safe short code generation and strict URL validation (scheme allow-list, no credentials, no private hosts, length limits).",
+        "ai_role": "Generates generator and validator.",
+        "engineer_owns": "Reviews randomness source (secrets, not random), collision retry and SSRF/open-redirect risks."
+      },
+      "validation": [
+        "Property-style tests on alphabet/length",
+        "Malicious URL corpus rejected"
+      ],
+      "wave": 3
+    },
+    {
+      "id": "T5",
+      "title": "Implement persistence layer",
+      "category": "code",
+      "depends_on": [
+        "T3"
+      ],
+      "deliverables": [
+        "Repository class",
+        "Migrations/DDL"
+      ],
+      "ai_assist": {
+        "prompt": "Implement a repository over the schema with create/get/delete/record_click/analytics queries; parameterised SQL only.",
+        "ai_role": "Writes SQL and repository code.",
+        "engineer_owns": "Checks parameterisation, transaction scope and locking behaviour."
+      },
+      "validation": [
+        "No string-built SQL",
+        "Concurrent click recording does not lose counts"
+      ],
+      "wave": 3
+    },
+    {
+      "id": "T6",
+      "title": "Implement service layer: create, resolve, expire, cache",
+      "category": "code",
+      "depends_on": [
+        "T4",
+        "T5"
+      ],
+      "deliverables": [
+        "Service class",
+        "TTL/LRU cache"
+      ],
+      "ai_assist": {
+        "prompt": "Implement the service orchestrating validation, persistence, expiry checks and a read-through cache invalidated on delete.",
+        "ai_role": "Generates service and cache.",
+        "engineer_owns": "Reviews cache invalidation, expiry correctness and clock handling."
+      },
+      "validation": [
+        "Deleted link never served from cache",
+        "Expired link returns 410"
+      ],
+      "wave": 4
+    },
+    {
+      "id": "T7",
+      "title": "Implement HTTP API and redirect",
+      "category": "code",
+      "depends_on": [
+        "T2",
+        "T6"
+      ],
+      "deliverables": [
+        "FastAPI app",
+        "Pydantic models"
+      ],
+      "ai_assist": {
+        "prompt": "Implement the OpenAPI contract with FastAPI. Record clicks in a background task so redirects stay fast.",
+        "ai_role": "Generates routes and models.",
+        "engineer_owns": "Confirms behaviour matches the contract and analytics cannot block redirects."
+      },
+      "validation": [
+        "Generated OpenAPI matches the contract"
+      ],
+      "wave": 5
+    },
+    {
+      "id": "T8",
+      "title": "Implement click analytics",
+      "category": "code",
+      "depends_on": [
+        "T5",
+        "T7"
+      ],
+      "deliverables": [
+        "Click capture",
+        "Analytics endpoint"
+      ],
+      "ai_assist": {
+        "prompt": "Capture referrer host and device class per click (no raw IP), expose totals, per-day series, top referrers and devices for a window.",
+        "ai_role": "Generates capture and aggregation queries.",
+        "engineer_owns": "Decides privacy boundary (what is NOT stored) and verifies aggregation maths."
+      },
+      "validation": [
+        "Aggregates equal raw event counts",
+        "No PII stored"
+      ],
+      "wave": 6
+    },
+    {
+      "id": "T9",
+      "title": "Abuse protection and security hardening",
+      "category": "code",
+      "depends_on": [
+        "T7"
+      ],
+      "deliverables": [
+        "Rate limiting",
+        "API key on management endpoints",
+        "Reserved aliases"
+      ],
+      "ai_assist": {
+        "prompt": "Review the shortener for abuse: enumeration, alias squatting, SSRF via targets, unbounded input, rate-limit bypass. Provide findings.",
+        "ai_role": "Second-reviewer pass producing findings.",
+        "engineer_owns": "Triages each finding and decides the mitigation or accepted risk."
+      },
+      "validation": [
+        "Each finding closed or documented"
+      ],
+      "wave": 6
+    },
+    {
+      "id": "T11",
+      "title": "Load check and scaling notes",
+      "category": "test",
+      "depends_on": [
+        "T7"
+      ],
+      "deliverables": [
+        "Redirect micro-benchmark",
+        "Scaling plan"
+      ],
+      "ai_assist": {
+        "prompt": "Create a small load script for the redirect path and summarise bottlenecks and the path to PostgreSQL/Redis for horizontal scale.",
+        "ai_role": "Writes the benchmark and drafts scaling notes.",
+        "engineer_owns": "Interprets numbers honestly (prototype vs production hardware)."
+      },
+      "validation": [
+        "Throughput/latency recorded with caveats"
+      ],
+      "wave": 6
+    },
+    {
+      "id": "T10",
+      "title": "Unit and integration tests",
+      "category": "test",
+      "depends_on": [
+        "T8",
+        "T9"
+      ],
+      "deliverables": [
+        "Unit tests per module",
+        "API integration tests",
+        "Concurrency test"
+      ],
+      "ai_assist": {
+        "prompt": "Write pytest tests for validation, generator, repository, cache, service, API and analytics including expiry, alias conflicts and concurrent clicks.",
+        "ai_role": "Generates tests and edge cases.",
+        "engineer_owns": "Verifies tests can fail, removes weak assertions, owns the coverage threshold."
+      },
+      "validation": [
+        "Coverage >= 85%",
+        "All tests deterministic (injected clock)"
+      ],
+      "wave": 7
+    },
+    {
+      "id": "T12",
+      "title": "Documentation and runbook",
+      "category": "docs",
+      "depends_on": [
+        "T10",
+        "T11"
+      ],
+      "deliverables": [
+        "README",
+        "Architecture",
+        "Example scenarios"
+      ],
+      "ai_assist": {
+        "prompt": "Draft README, architecture and runbook from the code. Mark any statement you cannot verify.",
+        "ai_role": "Drafts docs.",
+        "engineer_owns": "Runs every documented command and fixes mistakes."
+      },
+      "validation": [
+        "README steps executed successfully"
+      ],
+      "wave": 8
+    },
+    {
+      "id": "T13",
+      "title": "Final review",
+      "category": "review",
+      "depends_on": [
+        "T12"
+      ],
+      "deliverables": [
+        "Review notes",
+        "Known limitations"
+      ],
+      "ai_assist": {
+        "prompt": "Review the whole change as a skeptical maintainer: correctness, security, maintainability, test gaps.",
+        "ai_role": "Independent review pass.",
+        "engineer_owns": "Owns merge decision and limitations list."
+      },
+      "validation": [
+        "No unresolved blocking comments"
+      ],
+      "wave": 9
+    }
+  ],
+  "risks": [
+    {
+      "kind": "functional",
+      "risk": "Short-code collisions under concurrency.",
+      "mitigation": "UNIQUE constraint plus bounded retry; 62^7 (~3.5e12) code space makes collisions rare."
+    },
+    {
+      "kind": "functional",
+      "risk": "Expired or deleted links still redirecting because of caching.",
+      "mitigation": "Expiry is re-checked on every cache hit; delete invalidates the cache; TTL bounds staleness on other nodes."
+    },
+    {
+      "kind": "design",
+      "risk": "Single SQLite writer limits write throughput and horizontal scale.",
+      "mitigation": "Repository interface isolates SQL; documented migration to PostgreSQL + Redis cache."
+    },
+    {
+      "kind": "design",
+      "risk": "Click recording on the redirect path could add latency or lose events on crash.",
+      "mitigation": "Recorded in a background task; accepted trade-off of possible loss on crash (analytics, not billing)."
+    },
+    {
+      "kind": "functional",
+      "risk": "Open redirect / SSRF abuse through attacker-chosen targets.",
+      "mitigation": "Scheme allow-list, no credentials, no private/loopback hosts, rate limiting, optional API key."
+    },
+    {
+      "kind": "functional",
+      "risk": "Requirement interpreted differently by stakeholders.",
+      "mitigation": "Acceptance criteria and assumptions are written down and reviewed before coding."
+    },
+    {
+      "kind": "design",
+      "risk": "Over-engineering beyond the stated requirement.",
+      "mitigation": "Smallest design satisfying the criteria; extension points documented, not built."
+    },
+    {
+      "kind": "functional",
+      "risk": "Edge cases and error paths are untested.",
+      "mitigation": "Tests for boundaries and failures are written for every task; coverage gate in CI."
+    },
+    {
+      "kind": "ai",
+      "risk": "AI output looks plausible but is incorrect or uses non-existent APIs.",
+      "mitigation": "Every generated unit is run, type-checked and covered by tests before acceptance."
+    },
+    {
+      "kind": "ai",
+      "risk": "AI-written tests may be tautological and miss gaps (coverage illusion).",
+      "mitigation": "Engineer breaks the code deliberately to confirm tests fail; coverage is a floor, not proof."
+    },
+    {
+      "kind": "ai",
+      "risk": "Inefficient or insecure patterns (N+1 queries, string-built SQL, weak randomness).",
+      "mitigation": "Checklist review for SQL, randomness, input validation and complexity; separate AI review pass."
+    },
+    {
+      "kind": "ai",
+      "risk": "Sensitive data or proprietary code exposed to AI tools.",
+      "mitigation": "Prompts contain requirements and snippets only; no secrets or customer data."
+    }
+  ],
+  "trade_offs": [
+    {
+      "decision": "Datastore",
+      "chosen": "SQLite behind a repository interface",
+      "alternative": "PostgreSQL + Redis from day one",
+      "rationale": "Zero-setup, runnable prototype; the interface keeps migration cheap. Limited write concurrency."
+    },
+    {
+      "decision": "Short-code strategy",
+      "chosen": "Random 7-char base62 with retry",
+      "alternative": "Counter/ID-encoded codes",
+      "rationale": "No coordination between nodes and codes are non-enumerable; needs collision retry."
+    },
+    {
+      "decision": "Redirect status",
+      "chosen": "302 Found",
+      "alternative": "301 Moved Permanently",
+      "rationale": "301 is cached by browsers, which would hide clicks and make delete/expiry ineffective."
+    },
+    {
+      "decision": "Analytics write path",
+      "chosen": "Background task after response",
+      "alternative": "Synchronous write or message queue",
+      "rationale": "Keeps redirect latency low; may drop events on crash. A queue is the production upgrade."
+    },
+    {
+      "decision": "Caching",
+      "chosen": "In-process TTL/LRU",
+      "alternative": "Shared Redis cache",
+      "rationale": "No extra infrastructure; per-node caches can be stale up to the TTL."
+    },
+    {
+      "decision": "Rate limiting",
+      "chosen": "In-process token bucket",
+      "alternative": "Distributed limiter (Redis/gateway)",
+      "rationale": "Simple and testable; limits are per node."
+    },
+    {
+      "decision": "Plan generation",
+      "chosen": "Deterministic rules + curated templates",
+      "alternative": "LLM-generated plans",
+      "rationale": "Reproducible and reviewable; less flexible. LLM output would still need engineer review."
+    },
+    {
+      "decision": "Delivery order",
+      "chosen": "Contract and tests before wide implementation",
+      "alternative": "Code first",
+      "rationale": "Slower start, fewer rework cycles and clearer acceptance criteria."
+    }
+  ],
+  "limitations": [
+    "Plans are templates tailored by keyword detection, not deep semantic understanding.",
+    "AI prompts are generated for an engineer to run in Copilot/ChatGPT; the tool calls no model itself."
+  ]
+}

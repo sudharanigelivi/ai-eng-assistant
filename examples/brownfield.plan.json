@@ -1,0 +1,217 @@
+{
+  "requirement": "Fix the bug in the existing checkout service where duplicate orders are created.",
+  "requirement_type": "brownfield",
+  "domain": "generic",
+  "ambiguity_level": "low",
+  "problem_statement": "Change existing behaviour safely: \"Fix the bug in the existing checkout service where duplicate orders are created\". Preserve public behaviour except where intentionally changed, proven by tests written before the change.",
+  "ambiguities": [
+    {
+      "term": "reproduction details",
+      "question": "What is the expected vs actual behaviour and how is it reproduced?",
+      "assumption": "The first task produces a failing test that defines expected behaviour.",
+      "impact": "high"
+    }
+  ],
+  "assumptions": [
+    "reproduction details: The first task produces a failing test that defines expected behaviour."
+  ],
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Understand existing behaviour and reproduce the issue",
+      "category": "clarify",
+      "depends_on": [],
+      "deliverables": [
+        "Reproduction steps or failing test",
+        "Affected modules list"
+      ],
+      "ai_assist": {
+        "prompt": "Requirement: \"Fix the bug in the existing checkout service where duplicate orders are created.\". Given the relevant existing code, explain current behaviour, where it deviates from expectation, and how to reproduce it.",
+        "ai_role": "Reads and explains unfamiliar code; suggests reproduction.",
+        "engineer_owns": "Confirms the explanation by running the code; never trusts it unverified."
+      },
+      "validation": [
+        "Issue reproduced locally",
+        "Expected behaviour agreed"
+      ],
+      "wave": 1
+    },
+    {
+      "id": "T2",
+      "title": "Add characterization / failing tests first",
+      "category": "test",
+      "depends_on": [
+        "T1"
+      ],
+      "deliverables": [
+        "Test that fails for the bug or pins current behaviour"
+      ],
+      "ai_assist": {
+        "prompt": "Write pytest tests that pin the current behaviour around \"Fix the bug in the existing checkout service where duplicate orders are created.\" and one that fails for the reported defect.",
+        "ai_role": "Generates tests quickly.",
+        "engineer_owns": "Confirms the new test fails for the right reason before any fix."
+      },
+      "validation": [
+        "Failing test fails on unchanged code",
+        "Existing suite is green"
+      ],
+      "wave": 2
+    },
+    {
+      "id": "T3",
+      "title": "Design the smallest safe change",
+      "category": "design",
+      "depends_on": [
+        "T2"
+      ],
+      "deliverables": [
+        "Change plan",
+        "Compatibility and rollback notes"
+      ],
+      "ai_assist": {
+        "prompt": "Propose the minimal change for \"Fix the bug in the existing checkout service where duplicate orders are created.\" that preserves public behaviour; list alternatives and blast radius.",
+        "ai_role": "Proposes options and enumerates impacted callers.",
+        "engineer_owns": "Chooses the option; verifies callers via search, not memory."
+      },
+      "validation": [
+        "API/schema compatibility explicitly checked"
+      ],
+      "wave": 3
+    },
+    {
+      "id": "T4",
+      "title": "Implement the change / refactor",
+      "category": "code",
+      "depends_on": [
+        "T3"
+      ],
+      "deliverables": [
+        "Focused diff"
+      ],
+      "ai_assist": {
+        "prompt": "Implement the planned change for \"Fix the bug in the existing checkout service where duplicate orders are created.\" with a minimal diff. Do not alter unrelated code.",
+        "ai_role": "Generates the diff.",
+        "engineer_owns": "Reads every changed line; rejects unrelated edits."
+      },
+      "validation": [
+        "Diff touches only planned modules"
+      ],
+      "wave": 4
+    },
+    {
+      "id": "T5",
+      "title": "Regression and new-behaviour tests",
+      "category": "test",
+      "depends_on": [
+        "T4"
+      ],
+      "deliverables": [
+        "Passing new tests",
+        "Full suite green",
+        "Coverage delta"
+      ],
+      "ai_assist": {
+        "prompt": "Extend tests for \"Fix the bug in the existing checkout service where duplicate orders are created.\": boundaries, error paths and regression guards for neighbouring behaviour.",
+        "ai_role": "Suggests extra edge cases.",
+        "engineer_owns": "Checks coverage did not fall and tests are meaningful."
+      },
+      "validation": [
+        "Full suite passes",
+        "Coverage not reduced"
+      ],
+      "wave": 5
+    },
+    {
+      "id": "T6",
+      "title": "Update docs and changelog",
+      "category": "docs",
+      "depends_on": [
+        "T4"
+      ],
+      "deliverables": [
+        "Docs/changelog updates"
+      ],
+      "ai_assist": {
+        "prompt": "Update documentation and changelog for the change described by \"Fix the bug in the existing checkout service where duplicate orders are created.\"; list every doc that references the old behaviour.",
+        "ai_role": "Finds and drafts doc updates.",
+        "engineer_owns": "Verifies accuracy against the code."
+      },
+      "validation": [
+        "No stale references to old behaviour"
+      ],
+      "wave": 5
+    },
+    {
+      "id": "T7",
+      "title": "Review, rollout and rollback plan",
+      "category": "review",
+      "depends_on": [
+        "T5",
+        "T6"
+      ],
+      "deliverables": [
+        "Review notes",
+        "Rollback steps"
+      ],
+      "ai_assist": {
+        "prompt": "Review the diff for \"Fix the bug in the existing checkout service where duplicate orders are created.\" for regressions, security and performance impact; suggest a safe rollout.",
+        "ai_role": "Independent review pass.",
+        "engineer_owns": "Owns release decision and rollback plan."
+      },
+      "validation": [
+        "Rollback tested or trivially reversible"
+      ],
+      "wave": 6
+    }
+  ],
+  "risks": [
+    {
+      "kind": "functional",
+      "risk": "Behavioural regression in code the change does not obviously touch.",
+      "mitigation": "Characterization tests before change; full suite must be green."
+    },
+    {
+      "kind": "design",
+      "risk": "Hidden callers depend on current (buggy) behaviour.",
+      "mitigation": "Search for all usages; communicate behaviour changes in the changelog."
+    },
+    {
+      "kind": "ai",
+      "risk": "AI output looks plausible but is incorrect or uses non-existent APIs.",
+      "mitigation": "Every generated unit is run, type-checked and covered by tests before acceptance."
+    },
+    {
+      "kind": "ai",
+      "risk": "AI-written tests may be tautological and miss gaps (coverage illusion).",
+      "mitigation": "Engineer breaks the code deliberately to confirm tests fail; coverage is a floor, not proof."
+    },
+    {
+      "kind": "ai",
+      "risk": "Inefficient or insecure patterns (N+1 queries, string-built SQL, weak randomness).",
+      "mitigation": "Checklist review for SQL, randomness, input validation and complexity; separate AI review pass."
+    },
+    {
+      "kind": "ai",
+      "risk": "Sensitive data or proprietary code exposed to AI tools.",
+      "mitigation": "Prompts contain requirements and snippets only; no secrets or customer data."
+    }
+  ],
+  "trade_offs": [
+    {
+      "decision": "Plan generation",
+      "chosen": "Deterministic rules + curated templates",
+      "alternative": "LLM-generated plans",
+      "rationale": "Reproducible and reviewable; less flexible. LLM output would still need engineer review."
+    },
+    {
+      "decision": "Delivery order",
+      "chosen": "Contract and tests before wide implementation",
+      "alternative": "Code first",
+      "rationale": "Slower start, fewer rework cycles and clearer acceptance criteria."
+    }
+  ],
+  "limitations": [
+    "Plans are templates tailored by keyword detection, not deep semantic understanding.",
+    "AI prompts are generated for an engineer to run in Copilot/ChatGPT; the tool calls no model itself."
+  ]
+}

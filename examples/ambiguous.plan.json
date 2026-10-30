@@ -1,0 +1,279 @@
+{
+  "requirement": "Make the app better and faster",
+  "requirement_type": "ambiguous",
+  "domain": "generic",
+  "ambiguity_level": "high",
+  "problem_statement": "The request \"Make the app better and faster\" is underspecified. Convert it into measurable acceptance criteria before committing to a design.",
+  "ambiguities": [
+    {
+      "term": "better",
+      "question": "Better by which measurable criterion (speed, correctness, UX, cost)?",
+      "assumption": "No change is made until a measurable acceptance criterion is agreed.",
+      "impact": "high"
+    },
+    {
+      "term": "scope",
+      "question": "What outcome, for which users, would make this successful?",
+      "assumption": "No implementation begins until success criteria are agreed.",
+      "impact": "high"
+    },
+    {
+      "term": "faster",
+      "question": "Which operation must be faster, by how much, and how is it measured?",
+      "assumption": "Latency of the hot path is the target; baseline first, then require a measurable improvement.",
+      "impact": "medium"
+    }
+  ],
+  "assumptions": [
+    "better: No change is made until a measurable acceptance criterion is agreed.",
+    "scope: No implementation begins until success criteria are agreed.",
+    "faster: Latency of the hot path is the target; baseline first, then require a measurable improvement."
+  ],
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Resolve ambiguities with stakeholders (blocking)",
+      "category": "clarify",
+      "depends_on": [],
+      "deliverables": [
+        "Answered clarification questions",
+        "Measurable acceptance criteria"
+      ],
+      "ai_assist": {
+        "prompt": "Requirement: \"Make the app better and faster\". Generate the most valuable clarifying questions ranked by impact, with a safe default assumption for each.",
+        "ai_role": "Drafts ranked questions and default assumptions.",
+        "engineer_owns": "Asks stakeholders; no implementation starts on unanswered high-impact questions."
+      },
+      "validation": [
+        "All high-impact ambiguities answered or explicitly assumed"
+      ],
+      "wave": 1
+    },
+    {
+      "id": "T2",
+      "title": "Time-boxed spike on a thin vertical slice",
+      "category": "design",
+      "depends_on": [
+        "T1"
+      ],
+      "deliverables": [
+        "Throwaway prototype",
+        "Findings and revised estimate"
+      ],
+      "ai_assist": {
+        "prompt": "Sketch the thinnest end-to-end slice that would validate the riskiest assumption in \"Make the app better and faster\".",
+        "ai_role": "Scaffolds the prototype.",
+        "engineer_owns": "Decides what the spike proves and discards the code if it is not production quality."
+      },
+      "validation": [
+        "Riskiest assumption confirmed or refuted"
+      ],
+      "wave": 2
+    },
+    {
+      "id": "T3",
+      "title": "Define API contract and data schema",
+      "category": "design",
+      "depends_on": [
+        "T2"
+      ],
+      "deliverables": [
+        "OpenAPI contract",
+        "Error model",
+        "Schema definition"
+      ],
+      "ai_assist": {
+        "prompt": "Draft an OpenAPI 3 contract and relational schema for: \"Make the app better and faster\". Include error responses, pagination and validation limits.",
+        "ai_role": "Produces a first-draft contract and schema.",
+        "engineer_owns": "Reviews naming, status codes, backwards compatibility and constraints."
+      },
+      "validation": [
+        "Contract lints clean",
+        "Every endpoint has success and error cases"
+      ],
+      "wave": 3
+    },
+    {
+      "id": "T4",
+      "title": "Implement core domain logic",
+      "category": "code",
+      "depends_on": [
+        "T3"
+      ],
+      "deliverables": [
+        "Domain/service layer",
+        "Repository interface"
+      ],
+      "ai_assist": {
+        "prompt": "Implement the domain service for \"Make the app better and faster\" behind a repository interface. Keep I/O out of the domain layer and return typed errors.",
+        "ai_role": "Generates implementation and boilerplate.",
+        "engineer_owns": "Reviews design boundaries, error handling and complexity line by line."
+      },
+      "validation": [
+        "Unit tests pass",
+        "No business logic in transport layer"
+      ],
+      "wave": 4
+    },
+    {
+      "id": "T5",
+      "title": "Implement API/interface layer",
+      "category": "code",
+      "depends_on": [
+        "T4"
+      ],
+      "deliverables": [
+        "HTTP handlers",
+        "Input validation"
+      ],
+      "ai_assist": {
+        "prompt": "Expose the service for \"Make the app better and faster\" through the OpenAPI contract with strict input validation and consistent errors.",
+        "ai_role": "Generates handlers and validation models.",
+        "engineer_owns": "Verifies behaviour matches the contract exactly."
+      },
+      "validation": [
+        "Contract tests pass",
+        "Invalid input returns 4xx, never 5xx"
+      ],
+      "wave": 5
+    },
+    {
+      "id": "T6",
+      "title": "Security and performance hardening",
+      "category": "code",
+      "depends_on": [
+        "T5"
+      ],
+      "deliverables": [
+        "Auth/rate limiting where needed",
+        "Performance notes"
+      ],
+      "ai_assist": {
+        "prompt": "Review this implementation of \"Make the app better and faster\" for injection, abuse, resource exhaustion and N+1 queries. List findings with severity.",
+        "ai_role": "Acts as a second reviewer producing a findings list.",
+        "engineer_owns": "Triages every finding; fixes or documents each one."
+      },
+      "validation": [
+        "Each finding resolved or accepted with rationale"
+      ],
+      "wave": 6
+    },
+    {
+      "id": "T7",
+      "title": "Write unit and integration tests",
+      "category": "test",
+      "depends_on": [
+        "T5"
+      ],
+      "deliverables": [
+        "Unit tests",
+        "Integration tests",
+        "Coverage report"
+      ],
+      "ai_assist": {
+        "prompt": "Write pytest unit and integration tests for \"Make the app better and faster\" covering happy path, boundaries, errors and concurrency. Prefer behaviour over implementation.",
+        "ai_role": "Generates test cases and fixtures, including edge cases the engineer may miss.",
+        "engineer_owns": "Checks each test can fail (mutation by hand), removes tautologies, sets the coverage bar."
+      },
+      "validation": [
+        "Tests fail when behaviour is deliberately broken",
+        "Coverage >= 85% on core logic"
+      ],
+      "wave": 6
+    },
+    {
+      "id": "T8",
+      "title": "Write documentation",
+      "category": "docs",
+      "depends_on": [
+        "T7",
+        "T6"
+      ],
+      "deliverables": [
+        "README",
+        "Architecture notes",
+        "Runbook"
+      ],
+      "ai_assist": {
+        "prompt": "Draft README setup steps and architecture notes for \"Make the app better and faster\" from the code and contract. Flag anything you cannot verify.",
+        "ai_role": "Drafts prose from code and contract.",
+        "engineer_owns": "Executes every documented command and corrects inaccuracies."
+      },
+      "validation": [
+        "A new engineer can run the project using only the README"
+      ],
+      "wave": 7
+    },
+    {
+      "id": "T9",
+      "title": "Final review and release checklist",
+      "category": "review",
+      "depends_on": [
+        "T8"
+      ],
+      "deliverables": [
+        "Review notes",
+        "Known limitations"
+      ],
+      "ai_assist": {
+        "prompt": "Act as a skeptical reviewer of this change for \"Make the app better and faster\". List correctness, security, maintainability and test gaps.",
+        "ai_role": "Independent review pass to catch blind spots.",
+        "engineer_owns": "Owns the merge decision and the known-limitations list."
+      },
+      "validation": [
+        "All blocking review comments resolved"
+      ],
+      "wave": 8
+    }
+  ],
+  "risks": [
+    {
+      "kind": "functional",
+      "risk": "Building the wrong thing because key questions were never answered.",
+      "mitigation": "Blocking clarification task; spike validates the riskiest assumption before commitment."
+    },
+    {
+      "kind": "design",
+      "risk": "Rework from unstable scope.",
+      "mitigation": "Keep spike code disposable; plan is regenerated once ambiguities are resolved."
+    },
+    {
+      "kind": "ai",
+      "risk": "AI output looks plausible but is incorrect or uses non-existent APIs.",
+      "mitigation": "Every generated unit is run, type-checked and covered by tests before acceptance."
+    },
+    {
+      "kind": "ai",
+      "risk": "AI-written tests may be tautological and miss gaps (coverage illusion).",
+      "mitigation": "Engineer breaks the code deliberately to confirm tests fail; coverage is a floor, not proof."
+    },
+    {
+      "kind": "ai",
+      "risk": "Inefficient or insecure patterns (N+1 queries, string-built SQL, weak randomness).",
+      "mitigation": "Checklist review for SQL, randomness, input validation and complexity; separate AI review pass."
+    },
+    {
+      "kind": "ai",
+      "risk": "Sensitive data or proprietary code exposed to AI tools.",
+      "mitigation": "Prompts contain requirements and snippets only; no secrets or customer data."
+    }
+  ],
+  "trade_offs": [
+    {
+      "decision": "Plan generation",
+      "chosen": "Deterministic rules + curated templates",
+      "alternative": "LLM-generated plans",
+      "rationale": "Reproducible and reviewable; less flexible. LLM output would still need engineer review."
+    },
+    {
+      "decision": "Delivery order",
+      "chosen": "Contract and tests before wide implementation",
+      "alternative": "Code first",
+      "rationale": "Slower start, fewer rework cycles and clearer acceptance criteria."
+    }
+  ],
+  "limitations": [
+    "Plans are templates tailored by keyword detection, not deep semantic understanding.",
+    "AI prompts are generated for an engineer to run in Copilot/ChatGPT; the tool calls no model itself."
+  ]
+}

@@ -1,0 +1,1 @@
+Fix the bug in the existing checkout service where duplicate orders are created.
